@@ -72,7 +72,9 @@ const userSlice = createSlice({
         },
         updateCurrentUser: (state, action) => {
             state.currentUser = action.payload;
-            localStorage.setItem('user', JSON.stringify(action.payload));
+            state.currentRole = action.payload.role;
+            state.currentToken = action.payload.token;
+            state.isLoggedIn = true;
         },
         authSuccess: (state, action) => {
             localStorage.setItem('user', JSON.stringify(action.payload));
@@ -278,6 +280,11 @@ const userSlice = createSlice({
             state.loading = false;
             state.error = null;
         },
+        success: (state, action) => {
+            state.status = 'success';
+            state.loading = false;
+            state.error = null;
+        },
     },
 });
 
@@ -316,6 +323,7 @@ export const {
     removeAllFromCart,
     fetchProductDetailsFromCart,
     updateCurrentUser,
+    success,
 } = userSlice.actions;
 
 export const userReducer = userSlice.reducer;

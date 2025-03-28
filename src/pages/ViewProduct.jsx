@@ -205,18 +205,10 @@ const ViewProduct = () => {
                                 variant="contained" 
                                 size="large" 
                                 startIcon={<ShoppingCartIcon />}
-                                sx={{ flex: 1, mr: 2 }}
+                                sx={{ flex: 1 }}
                                 onClick={handleAddToCart}
                             >
                                 Add to Cart
-                            </Button>
-                            <Button 
-                                variant="outlined" 
-                                size="large"
-                                sx={{ flex: 1 }}
-                                onClick={currentUser ? undefined : () => setShowLoginDialog(true)}
-                            >
-                                Buy Now
                             </Button>
                         </ActionButtons>
                     </ProductInfo>

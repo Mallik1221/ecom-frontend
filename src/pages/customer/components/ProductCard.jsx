@@ -6,10 +6,26 @@ import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useNavigate } from 'react-router-dom';
+import Chip from '@mui/material/Chip';
 
 const ProductCard = ({ product }) => {
 
     const navigate = useNavigate();
+
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'Processing':
+                return 'warning';
+            case 'Out For Delivery':
+                return 'info';
+            case 'Delivered':
+                return 'success';
+            case 'Cancelled':
+                return 'error';
+            default:
+                return 'default';
+        }
+    };
 
     return (
         <Card>
@@ -56,6 +72,13 @@ const ProductCard = ({ product }) => {
                         ₹{product.price && product.price.cost}
                     </Typography>
                 </Stack>
+
+                <Chip 
+                    label={product.orderStatus || 'Processing'} 
+                    color={getStatusColor(product.orderStatus)}
+                    size="small"
+                    sx={{ alignSelf: 'flex-start' }}
+                />
             </Stack>
         </Card >
     );

@@ -24,6 +24,7 @@ import {
     getSpecificProductsFailed,
     specificProductSuccess,
     updateCurrentUser,
+    success,
 } from './userSlice';
 
 const REACT_APP_BASE_URL = "http://localhost:5000";
@@ -177,10 +178,17 @@ export const getCustomers = (id, address) => async (dispatch) => {
     }
 }
 
-export const getSpecificProducts = (id, address) => async (dispatch) => {
+export const getSpecificProducts = (id, type, status = null) => async (dispatch) => {
     dispatch(getRequest());
+
     try {
-        const result = await axios.get(`${REACT_APP_BASE_URL}/${address}/${id}`);
+        let result;
+        if (type === "getOrdersByStatus") {
+            result = await axios.get(`${REACT_APP_BASE_URL}/getOrdersByStatus/${id}/${status}`);
+        } else {
+            result = await axios.get(`${REACT_APP_BASE_URL}/${type}/${id}`);
+        }
+
         if (result.data.message) {
             dispatch(getSpecificProductsFailed(result.data.message));
         }
@@ -207,3 +215,17 @@ export const getSearchedProducts = (address, key) => async (dispatch) => {
         dispatch(getError(error.response?.data?.message || error.message));
     }
 }
+
+export const updateOrderStatus = (orderId, status) => async (dispatch) => {
+    dispatch(getRequest());
+
+    try {
+        const result = await axios.put(`${REACT_APP_BASE_URL}/updateOrderStatus`, {
+            orderId,
+            status
+        });
+        dispatch(success(result.data));
+    } catch (error) {
+        dispatch(getError(error.response?.data?.message || error.message));
+    }
+};

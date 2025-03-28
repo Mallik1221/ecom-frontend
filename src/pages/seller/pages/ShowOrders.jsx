@@ -4,6 +4,8 @@ import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 import AddedToCartSection from '../components/AddedToCartSection';
 import OutForDeliverySection from '../components/OutForDeliverySection';
+import CompletedOrdersSection from '../components/CompletedOrdersSection';
+import CancelledOrdersSection from '../components/CancelledOrdersSection';
 
 const ShowOrders = () => {
 
@@ -30,10 +32,10 @@ const ShowOrders = () => {
         <OutForDeliverySection />
       </CustomTabPanel>
       <CustomTabPanel value={value} index={2}>
-        0 Completed Orders
+        <CompletedOrdersSection />
       </CustomTabPanel>
       <CustomTabPanel value={value} index={3}>
-        0 Cancelled Orders
+        <CancelledOrdersSection />
       </CustomTabPanel>
     </Box>
   );

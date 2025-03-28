@@ -1,56 +1,81 @@
 import { useDispatch, useSelector } from "react-redux";
-import { getSpecificProducts } from "../../../redux/userHandle";
-import { useEffect } from "react";
+import { getSpecificProducts, updateOrderStatus } from "../../../redux/userHandle";
+import { useEffect, useState } from "react";
 import { Box, Typography } from "@mui/material";
 import { BlueButton, GreenButton } from "../../../utils/buttonStyles";
 import TableTemplate from "../../../components/TableTemplate";
 import { useNavigate } from "react-router-dom";
+import Popup from "../../../components/Popup";
 
 const OutForDeliverySection = () => {
     const navigate = useNavigate()
     const dispatch = useDispatch();
 
-    const { currentUser, specificProductData, responseSpecificProducts } = useSelector(state => state.user);
+    const { currentUser, specificProductData, responseSpecificProducts, status } = useSelector(state => state.user);
+
+    const [message, setMessage] = useState("");
+    const [showPopup, setShowPopup] = useState(false);
 
     useEffect(() => {
-        dispatch(getSpecificProducts(currentUser._id, "getOrderedProductsBySeller"));
-    }, [dispatch, currentUser._id])
+        dispatch(getSpecificProducts(currentUser._id, "getOrdersByStatus", "Out For Delivery"));
+    }, [dispatch, currentUser._id]);
+
+    useEffect(() => {
+        if (status === 'success') {
+            setMessage("Order Status Updated Successfully");
+            setShowPopup(true);
+            dispatch(getSpecificProducts(currentUser._id, "getOrdersByStatus", "Out For Delivery"));
+        }
+    }, [status, dispatch, currentUser._id]);
 
     const productsColumns = [
         { id: 'name', label: 'Product Name', minWidth: 170 },
         { id: 'quantity', label: 'Product Quantity', minWidth: 100 },
         { id: 'category', label: 'Product Category', minWidth: 100 },
         { id: 'subcategory', label: 'Product SubCategory', minWidth: 100 },
-    ]
+        { id: 'orderedAt', label: 'Order Date', minWidth: 120 },
+        { id: 'address', label: 'Delivery Address', minWidth: 200 },
+    ];
+
+    const formatAddress = (buyerInfo) => {
+        if (!buyerInfo) return 'Address not available';
+        const { address, city, state, pinCode } = buyerInfo;
+        return [address, city, state, pinCode].filter(Boolean).join(', ');
+    };
 
     const productsRows = Array.isArray(specificProductData) && specificProductData.length > 0
         ? specificProductData.map((product) => ({
-            name: product.productName,
-            quantity: product.quantity,
-            category: product.category,
-            subcategory: product.subcategory,
-            id: product.productName,
+            name: product.productName || 'N/A',
+            quantity: product.quantity || 0,
+            category: product.category || 'N/A',
+            subcategory: product.subcategory || 'N/A',
+            orderedAt: product.orderedAt ? new Date(product.orderedAt).toLocaleDateString() : 'N/A',
+            address: formatAddress(product.buyerInfo),
+            id: `${product._id || ''}${product.orderId || ''}`,
             productID: product._id,
+            orderId: product.orderId,
+            orderStatus: product.orderStatus
         }))
         : [];
+
+    const handleStatusUpdate = (orderId, newStatus) => {
+        dispatch(updateOrderStatus(orderId, newStatus));
+    };
 
     const ProductsButtonHaver = ({ row }) => {
         return (
             <>
                 <BlueButton
-                    onClick={() => {
-                        navigate("/Seller/orders/product/" + row.productID)
-                    }}
+                    onClick={() => navigate("/Seller/orders/product/" + row.productID)}
                 >
                     View Product
-                </BlueButton >
+                </BlueButton>
                 <GreenButton
-                    onClick={() => {
-                        console.log("show")
-                    }}
+                    onClick={() => handleStatusUpdate(row.orderId, "Delivered")}
+                    sx={{ ml: 1 }}
                 >
-                    Show Customers
-                </GreenButton >
+                    Mark as Delivered
+                </GreenButton>
             </>
         );
     };
@@ -58,25 +83,23 @@ const OutForDeliverySection = () => {
     return (
         <>
             {responseSpecificProducts ?
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
-                    <GreenButton
-                        variant="contained"
-                        onClick={() => navigate("/Seller/addproduct")}
-                    >
-                        Add Products
-                    </GreenButton>
+                <Box sx={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+                    <Typography variant="h6">
+                        No Orders Out For Delivery
+                    </Typography>
                 </Box>
                 :
                 <>
                     <Typography variant="h5" gutterBottom>
-                        Products List:
+                        Out For Delivery Orders:
                     </Typography>
 
                     <TableTemplate buttonHaver={ProductsButtonHaver} columns={productsColumns} rows={productsRows} />
                 </>
             }
+            <Popup message={message} setShowPopup={setShowPopup} showPopup={showPopup} />
         </>
     )
 }
 
-export default OutForDeliverySection
+export default OutForDeliverySection;
