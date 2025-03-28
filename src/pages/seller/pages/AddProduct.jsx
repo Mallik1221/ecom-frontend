@@ -55,23 +55,46 @@ const AddProduct = () => {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('image', selectedFile);
-
     try {
       setLoader(true);
-      // Use the environment variables for the backend URL
       const baseURL = process.env.NODE_ENV === 'production'
         ? process.env.REACT_APP_PROD_BACKEND_URL
         : process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
-      console.log('Uploading to:', baseURL); // Debug log
+      console.log('Uploading to:', baseURL);
+
+      let response;
+      
+      if (process.env.NODE_ENV === 'production') {
+        // Convert image to Base64 for production
+        const reader = new FileReader();
+        const base64Promise = new Promise((resolve, reject) => {
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = (error) => reject(error);
+        });
+        reader.readAsDataURL(selectedFile);
         
-      const response = await axios.post(`${baseURL}/upload`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+        const base64Image = await base64Promise;
+        
+        response = await axios.post(`${baseURL}/upload`, {
+          image: base64Image
+        }, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+      } else {
+        // Handle file upload for development
+        const formData = new FormData();
+        formData.append('image', selectedFile);
+        
+        response = await axios.post(`${baseURL}/upload`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+      }
+
       setProductImage(response.data.imageUrl);
       setUploadError("");
       setMessage("Image uploaded successfully!");

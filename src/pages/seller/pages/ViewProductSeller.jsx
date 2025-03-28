@@ -11,6 +11,7 @@ import Popup from '../../../components/Popup';
 import { generateRandomColor, timeAgo } from '../../../utils/helperFunctions';
 import { underControl } from '../../../redux/userSlice';
 import AlertDialogSlide from '../../../components/AlertDialogSlide';
+import axios from 'axios';
 
 const ViewProductSeller = () => {
   const dispatch = useDispatch();
@@ -110,6 +111,116 @@ const ViewProductSeller = () => {
     }
   }, [status, error, dispatch, productID]);
 
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [imagePreview, setImagePreview] = useState("");
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        setUploadError("File size should be less than 5MB");
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        setUploadError("Please select an image file");
+        return;
+      }
+      setSelectedFile(file);
+      setUploadError("");
+      // Create a preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      setUploadError("Please select an image file");
+      return;
+    }
+
+    try {
+      setUploading(true);
+      setUploadError("");
+      const baseURL = process.env.NODE_ENV === 'production'
+        ? process.env.REACT_APP_PROD_BACKEND_URL
+        : process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+
+      console.log('Environment:', {
+        nodeEnv: process.env.NODE_ENV,
+        backendUrl: process.env.REACT_APP_BACKEND_URL,
+        prodBackendUrl: process.env.REACT_APP_PROD_BACKEND_URL,
+        usingUrl: baseURL
+      });
+
+      let response;
+      
+      if (process.env.NODE_ENV === 'production') {
+        // Convert image to Base64 for production
+        const reader = new FileReader();
+        const base64Promise = new Promise((resolve, reject) => {
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = (error) => reject(error);
+        });
+        reader.readAsDataURL(selectedFile);
+        
+        const base64Image = await base64Promise;
+        console.log('Uploading base64 image to:', baseURL);
+        
+        response = await axios.post(`${baseURL}/upload`, {
+          image: base64Image
+        }, {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000 // 10 second timeout
+        });
+      } else {
+        // Handle file upload for development
+        const formData = new FormData();
+        formData.append('image', selectedFile);
+        
+        console.log('Uploading file to:', baseURL);
+        response = await axios.post(`${baseURL}/upload`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          },
+          timeout: 10000 // 10 second timeout
+        });
+      }
+
+      console.log('Upload response:', response.data);
+      setProductImage(response.data.imageUrl);
+      setUploadError("");
+      setMessage("Image uploaded successfully!");
+      setShowPopup(true);
+    } catch (error) {
+      console.error('Upload error details:', {
+        error: error,
+        response: error.response,
+        message: error.message,
+        stack: error.stack
+      });
+
+      let errorMessage = "Failed to upload image. ";
+      if (error.code === 'ECONNABORTED') {
+        errorMessage += "Request timed out. Please try again.";
+      } else if (error.response) {
+        errorMessage += error.response.data?.message || error.message;
+      } else if (error.request) {
+        errorMessage += "No response from server. Please check your connection.";
+      } else {
+        errorMessage += error.message || "Please try again.";
+      }
+      
+      setUploadError(errorMessage);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <>
       {loading ?
@@ -170,19 +281,28 @@ const ViewProductSeller = () => {
                               ? <EditImage src={productImage} alt="" />
                               : <EditImage src={altImage} alt="" />
                           }
+                          {imagePreview && <EditImage src={imagePreview} alt="Preview" />}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileSelect}
+                            style={{ marginBottom: '1rem' }}
+                          />
+                          {uploadError && (
+                            <Typography color="error" variant="body2">
+                              {uploadError}
+                            </Typography>
+                          )}
+                          <BlueButton
+                            onClick={handleUpload}
+                            disabled={!selectedFile || uploading}
+                            sx={{ mt: 1 }}
+                          >
+                            {uploading ? <CircularProgress size={24} color="inherit" /> : "Upload Image"}
+                          </BlueButton>
                         </Stack>
                         <form onSubmit={submitHandler}>
                           <Stack spacing={3}>
-                            <TextField
-                              fullWidth
-                              label="Product Image URL"
-                              value={productImage}
-                              onChange={(event) => setProductImage(event.target.value)}
-                              required
-                              InputLabelProps={{
-                                shrink: true,
-                              }}
-                            />
                             <TextField
                               fullWidth
                               label="Product Name"
@@ -284,7 +404,7 @@ const ViewProductSeller = () => {
                 <ReviewWritingContainer>
                   <Typography variant="h4">Reviews</Typography>
 
-                  {productDetails.reviews && productDetails.reviews.length > 0 &&
+                  {productDetails?.reviews && productDetails.reviews.length > 0 &&
                     <DarkRedButton onClick={() => {
                       setDialog("Do you want to delete all notices ?")
                       setShowDialog(true)
@@ -293,26 +413,26 @@ const ViewProductSeller = () => {
                     </DarkRedButton>}
                 </ReviewWritingContainer>
 
-                {productDetails.reviews && productDetails.reviews.length > 0 ? (
+                {productDetails?.reviews && productDetails.reviews.length > 0 ? (
                   <ReviewContainer>
                     {productDetails.reviews.map((review, index) => (
                       <ReviewCard key={index}>
                         <ReviewCardDivision>
-                          <Avatar sx={{ width: "60px", height: "60px", marginRight: "1rem", backgroundColor: generateRandomColor(review._id) }}>
-                            {String(review.reviewer.name).charAt(0)}
+                          <Avatar sx={{ width: "60px", height: "60px", marginRight: "1rem", backgroundColor: generateRandomColor(review._id || index.toString()) }}>
+                            {review?.reviewer?.name ? String(review.reviewer.name).charAt(0) : '?'}
                           </Avatar>
                           <ReviewDetails>
-                            <Typography variant="h6">{review.reviewer.name}</Typography>
+                            <Typography variant="h6">{review?.reviewer?.name || 'Anonymous'}</Typography>
                             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
 
                               <Typography variant="body2">
-                                {timeAgo(review.date)}
+                                {timeAgo(review?.date)}
                               </Typography>
                             </div>
-                            <Typography variant="subtitle1">Rating: {review.rating}</Typography>
-                            <Typography variant="body1">{review.comment}</Typography>
+                            <Typography variant="subtitle1">Rating: {review?.rating || 'N/A'}</Typography>
+                            <Typography variant="body1">{review?.comment || 'No comment'}</Typography>
                           </ReviewDetails>
-                          <IconButton onClick={() => deleteHandler(review._id)}
+                          <IconButton onClick={() => deleteHandler(review?._id)}
                             sx={{ width: "4rem", p: 0 }}>
                             <Delete color='error' sx={{ fontSize: "2rem" }} />
                           </IconButton>

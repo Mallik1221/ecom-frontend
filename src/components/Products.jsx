@@ -7,6 +7,7 @@ import { BasicButton } from '../utils/buttonStyles';
 import { useNavigate } from 'react-router-dom';
 import Popup from './Popup';
 import { addStuff } from '../redux/userHandle';
+import altImage from "../assets/altimg.png";
 
 const Products = ({ productData }) => {
   const dispatch = useDispatch();
@@ -58,7 +59,7 @@ const Products = ({ productData }) => {
             sx={{ cursor: "pointer" }}
           >
             <ProductContainer>
-              <ProductImage src={data.productImage} />
+              <ProductImageWithFallback src={data.productImage} alt={data.productName} />
               <ProductName>{data.productName}</ProductName>
               <PriceMrp>{data.price.mrp}</PriceMrp>
               <PriceCost>₹{data.price.cost}</PriceCost>
@@ -128,9 +129,30 @@ const ProductGrid = styled(Grid)`
 
 const ProductImage = styled.img`
   width: 200px;
-  height: auto;
+  height: 200px;
+  object-fit: contain;
   margin-bottom: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px;
 `;
+
+const ProductImageWithFallback = ({ src, alt }) => {
+  const [error, setError] = useState(false);
+
+  const handleError = () => {
+    setError(true);
+    console.log('Image failed to load:', src);
+  };
+
+  return (
+    <ProductImage 
+      src={error ? altImage : src} 
+      alt={alt || 'Product image'}
+      onError={handleError}
+    />
+  );
+};
 
 const ProductName = styled.p`
   font-weight: bold;
