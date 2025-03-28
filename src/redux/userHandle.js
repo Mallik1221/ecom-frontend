@@ -27,7 +27,31 @@ import {
     success,
 } from './userSlice';
 
-const REACT_APP_BASE_URL = "http://localhost:5000";
+const REACT_APP_BASE_URL = process.env.REACT_APP_BASE_URL || "http://localhost:5000";
+console.log('API Base URL:', REACT_APP_BASE_URL);
+
+// Configure axios defaults
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+
+// Add request interceptor to log requests
+axios.interceptors.request.use(request => {
+    console.log('Making request to:', request.url);
+    return request;
+});
+
+// Add response interceptor to log errors
+axios.interceptors.response.use(
+    response => response,
+    error => {
+        console.error('API Error:', {
+            url: error.config?.url,
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        return Promise.reject(error);
+    }
+);
 
 export const authUser = (fields, role, mode) => async (dispatch) => {
     dispatch(authRequest());

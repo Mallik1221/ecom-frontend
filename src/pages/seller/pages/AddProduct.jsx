@@ -60,7 +60,14 @@ const AddProduct = () => {
 
     try {
       setLoader(true);
-      const response = await axios.post('http://localhost:5000/upload', formData, {
+      // Use the environment variables for the backend URL
+      const baseURL = process.env.NODE_ENV === 'production'
+        ? process.env.REACT_APP_PROD_BACKEND_URL
+        : process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+
+      console.log('Uploading to:', baseURL); // Debug log
+        
+      const response = await axios.post(`${baseURL}/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -70,8 +77,12 @@ const AddProduct = () => {
       setMessage("Image uploaded successfully!");
       setShowPopup(true);
     } catch (error) {
-      setUploadError("Failed to upload image. " + (error.response?.data?.message || "Please try again."));
-      console.error('Upload error:', error);
+      console.error('Upload error details:', {
+        error: error,
+        response: error.response,
+        message: error.message
+      });
+      setUploadError("Failed to upload image. " + (error.response?.data?.message || error.message || "Please try again."));
     } finally {
       setLoader(false);
     }
