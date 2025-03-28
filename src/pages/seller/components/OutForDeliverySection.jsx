@@ -29,12 +29,12 @@ const OutForDeliverySection = () => {
     }, [status, dispatch, currentUser._id]);
 
     const productsColumns = [
-        { id: 'name', label: 'Product Name', minWidth: 170 },
-        { id: 'quantity', label: 'Product Quantity', minWidth: 100 },
-        { id: 'category', label: 'Product Category', minWidth: 100 },
-        { id: 'subcategory', label: 'Product SubCategory', minWidth: 100 },
-        { id: 'orderedAt', label: 'Order Date', minWidth: 120 },
+        { id: 'customerName', label: 'Customer Name', minWidth: 170 },
+        { id: 'productName', label: 'Product Name', minWidth: 170 },
+        { id: 'quantity', label: 'Quantity', minWidth: 100 },
+        { id: 'price', label: 'Price', minWidth: 100 },
         { id: 'address', label: 'Delivery Address', minWidth: 200 },
+        { id: 'orderDate', label: 'Order Date', minWidth: 120 },
     ];
 
     const formatAddress = (buyerInfo) => {
@@ -44,17 +44,16 @@ const OutForDeliverySection = () => {
     };
 
     const productsRows = Array.isArray(specificProductData) && specificProductData.length > 0
-        ? specificProductData.map((product) => ({
-            name: product.productName || 'N/A',
-            quantity: product.quantity || 0,
-            category: product.category || 'N/A',
-            subcategory: product.subcategory || 'N/A',
-            orderedAt: product.orderedAt ? new Date(product.orderedAt).toLocaleDateString() : 'N/A',
-            address: formatAddress(product.buyerInfo),
-            id: `${product._id || ''}${product.orderId || ''}`,
-            productID: product._id,
-            orderId: product.orderId,
-            orderStatus: product.orderStatus
+        ? specificProductData.map((order) => ({
+            customerName: order.customerName || 'N/A',
+            productName: order.productName || 'N/A',
+            quantity: order.quantity || 0,
+            price: order.price && order.price.cost ? `₹${order.price.cost}` : 'N/A',
+            address: order.address || 'N/A',
+            orderDate: order.orderedAt ? new Date(order.orderedAt).toLocaleDateString() : 'N/A',
+            id: order.orderId || order._id,
+            orderId: order.orderId || order._id,
+            orderStatus: order.orderStatus
         }))
         : [];
 
@@ -65,14 +64,8 @@ const OutForDeliverySection = () => {
     const ProductsButtonHaver = ({ row }) => {
         return (
             <>
-                <BlueButton
-                    onClick={() => navigate("/Seller/orders/product/" + row.productID)}
-                >
-                    View Product
-                </BlueButton>
                 <GreenButton
                     onClick={() => handleStatusUpdate(row.orderId, "Delivered")}
-                    sx={{ ml: 1 }}
                 >
                     Mark as Delivered
                 </GreenButton>

@@ -17,54 +17,43 @@ const CancelledOrdersSection = () => {
     }, [dispatch, currentUser._id])
 
     const productsColumns = [
-        { id: 'name', label: 'Product Name', minWidth: 170 },
-        { id: 'quantity', label: 'Product Quantity', minWidth: 100 },
-        { id: 'category', label: 'Product Category', minWidth: 100 },
-        { id: 'subcategory', label: 'Product SubCategory', minWidth: 100 },
-    ]
+        { id: 'customerName', label: 'Customer Name', minWidth: 170 },
+        { id: 'productName', label: 'Product Name', minWidth: 170 },
+        { id: 'quantity', label: 'Quantity', minWidth: 100 },
+        { id: 'price', label: 'Price', minWidth: 100 },
+        { id: 'address', label: 'Delivery Address', minWidth: 200 },
+        { id: 'orderDate', label: 'Order Date', minWidth: 120 },
+    ];
 
     const productsRows = Array.isArray(specificProductData) && specificProductData.length > 0
-        ? specificProductData.map((product) => ({
-            name: product.productName,
-            quantity: product.quantity,
-            category: product.category,
-            subcategory: product.subcategory,
-            id: product.productName,
-            productID: product._id,
+        ? specificProductData.map((order) => ({
+            customerName: order.customerName || 'N/A',
+            productName: order.productName || 'N/A',
+            quantity: order.quantity || 0,
+            price: order.price && order.price.cost ? `₹${order.price.cost}` : 'N/A',
+            address: order.address || 'N/A',
+            orderDate: order.orderedAt ? new Date(order.orderedAt).toLocaleDateString() : 'N/A',
+            id: order.orderId || order._id,
+            orderId: order.orderId || order._id,
+            orderStatus: order.orderStatus
         }))
         : [];
 
     const ProductsButtonHaver = ({ row }) => {
         return (
-            <>
-                <BlueButton
-                    onClick={() => {
-                        navigate("/Seller/orders/product/" + row.productID)
-                    }}
-                >
-                    View Product
-                </BlueButton>
-                <GreenButton
-                    onClick={() => {
-                        navigate("/Seller/orders/customers/" + row.productID)
-                    }}
-                >
-                    Show Customers
-                </GreenButton>
-            </>
+            <Typography variant="body2" color="error.main">
+                Cancelled
+            </Typography>
         );
     };
 
     return (
         <>
             {responseSpecificProducts ?
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
-                    <GreenButton
-                        variant="contained"
-                        onClick={() => navigate("/Seller/addproduct")}
-                    >
-                        Add Products
-                    </GreenButton>
+                <Box sx={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+                    <Typography variant="h6">
+                        No Cancelled Orders
+                    </Typography>
                 </Box>
                 :
                 <>

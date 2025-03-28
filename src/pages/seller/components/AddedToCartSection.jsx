@@ -2,7 +2,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { getSpecificProducts, updateOrderStatus } from "../../../redux/userHandle";
 import { useEffect, useState } from "react";
 import { Box, Typography } from "@mui/material";
-import { BlueButton, GreenButton, DarkRedButton } from "../../../utils/buttonStyles";
+import { GreenButton, DarkRedButton } from "../../../utils/buttonStyles";
 import TableTemplate from "../../../components/TableTemplate";
 import { useNavigate } from "react-router-dom";
 import Popup from "../../../components/Popup";
@@ -17,47 +17,51 @@ const AddedToCartSection = () => {
     const [showPopup, setShowPopup] = useState(false);
 
     useEffect(() => {
-        dispatch(getSpecificProducts(currentUser._id, "getOrderedProductsBySeller"));
+        // Fetch orders with Processing status
+        dispatch(getSpecificProducts(currentUser._id, "getOrdersByStatus", "Processing"));
     }, [dispatch, currentUser._id]);
 
     useEffect(() => {
         if (status === 'success') {
             setMessage("Order Status Updated Successfully");
             setShowPopup(true);
-            dispatch(getSpecificProducts(currentUser._id, "getOrderedProductsBySeller"));
+            // Refresh the orders list after status update
+            dispatch(getSpecificProducts(currentUser._id, "getOrdersByStatus", "Processing"));
         }
     }, [status, dispatch, currentUser._id]);
 
-    const formatAddress = (buyerInfo) => {
-        if (!buyerInfo) return 'Address not available';
-        const { address, city, state, pinCode } = buyerInfo;
+    // Debug log to see the data structure
+    useEffect(() => {
+        console.log("Orders Data:", specificProductData);
+    }, [specificProductData]);
+
+    const formatAddress = (order) => {
+        if (!order) return 'Address not available';
+        const { address, city, state, pinCode } = order;
         return [address, city, state, pinCode].filter(Boolean).join(', ');
     };
 
     const productsColumns = [
-        { id: 'name', label: 'Product Name', minWidth: 170 },
-        { id: 'quantity', label: 'Product Quantity', minWidth: 100 },
-        { id: 'category', label: 'Product Category', minWidth: 100 },
-        { id: 'subcategory', label: 'Product SubCategory', minWidth: 100 },
-        { id: 'orderedAt', label: 'Order Date', minWidth: 120 },
+        { id: 'customerName', label: 'Customer Name', minWidth: 170 },
+        { id: 'productName', label: 'Product Name', minWidth: 170 },
+        { id: 'quantity', label: 'Quantity', minWidth: 100 },
+        { id: 'price', label: 'Price', minWidth: 100 },
         { id: 'address', label: 'Delivery Address', minWidth: 200 },
+        { id: 'orderDate', label: 'Order Date', minWidth: 120 },
     ];
 
     const productsRows = Array.isArray(specificProductData) && specificProductData.length > 0
-        ? specificProductData
-            .filter(product => product.orderStatus === 'Processing')
-            .map((product) => ({
-                name: product.productName || 'N/A',
-                quantity: product.quantity || 0,
-                category: product.category || 'N/A',
-                subcategory: product.subcategory || 'N/A',
-                orderedAt: product.orderedAt ? new Date(product.orderedAt).toLocaleDateString() : 'N/A',
-                address: formatAddress(product.buyerInfo),
-                id: `${product._id || ''}${product.orderId || ''}`,
-                productID: product._id,
-                orderId: product.orderId,
-                orderStatus: product.orderStatus
-            }))
+        ? specificProductData.map((order) => ({
+            customerName: order.customerName || 'N/A',
+            productName: order.productName || 'N/A',
+            quantity: order.quantity || 0,
+            price: order.price && order.price.cost ? `₹${order.price.cost}` : 'N/A',
+            address: order.address || 'N/A',
+            orderDate: order.orderedAt ? new Date(order.orderedAt).toLocaleDateString() : 'N/A',
+            id: order.orderId || order._id,
+            orderId: order.orderId || order._id,
+            orderStatus: order.orderStatus
+        }))
         : [];
 
     const handleStatusUpdate = (orderId, newStatus) => {
@@ -66,25 +70,30 @@ const AddedToCartSection = () => {
 
     const ProductsButtonHaver = ({ row }) => {
         return (
-            <>
-                <BlueButton
-                    onClick={() => navigate("/Seller/orders/product/" + row.productID)}
-                >
-                    View Product
-                </BlueButton>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <GreenButton
                     onClick={() => handleStatusUpdate(row.orderId, "Out For Delivery")}
-                    sx={{ ml: 1 }}
+                    sx={{ 
+                        fontSize: '0.8rem',
+                        padding: '4px 8px',
+                        minWidth: '120px',
+                        whiteSpace: 'nowrap'
+                    }}
                 >
-                    Out For Delivery
+                    OUT FOR DELIVERY
                 </GreenButton>
                 <DarkRedButton
                     onClick={() => handleStatusUpdate(row.orderId, "Cancelled")}
-                    sx={{ ml: 1 }}
+                    sx={{ 
+                        fontSize: '0.8rem',
+                        padding: '4px 8px',
+                        minWidth: '120px',
+                        whiteSpace: 'nowrap'
+                    }}
                 >
-                    Cancel Order
+                    CANCEL ORDER
                 </DarkRedButton>
-            </>
+            </Box>
         );
     };
 
@@ -93,7 +102,7 @@ const AddedToCartSection = () => {
             {responseSpecificProducts ?
                 <Box sx={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
                     <Typography variant="h6">
-                        No Orders Found
+                        No New Orders Found
                     </Typography>
                 </Box>
                 :
